@@ -29,22 +29,6 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-platform-http-starter</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>com.example.camel</groupId>
-            <artifactId>io-component-spi</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.example.camel</groupId>
-            <artifactId>io-component-onedrive</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.example.camel</groupId>
-            <artifactId>io-component-gdrive</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
