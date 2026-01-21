@@ -4,6 +4,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
+import org.apache.camel.model.rest.RestParamType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,26 +37,28 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
 
         rest("/iocomponent")
                 .get("/providers")
-                    .route()
-                    .setBody(exchange -> registry.listProviderIds())
-                    .endRest()
+                    .to("direct:listProviders")
 
                 .get("/{provider}/getFolderInfo")
                     .description("List folders for the given provider")
-                    .param().name("folderId").type().query().description("Parent folder id (optional for root)").endParam()
-                    .route()
-                    .process(exchange -> {
-                        String providerId = exchange.getMessage().getHeader("provider", String.class);
-                        String folderId = exchange.getMessage().getHeader("folderId", String.class);
-                        Map<String, String> options = extractOptions(exchange);
-                        Object response = registry.invokeGetFolderInfo(providerId, folderId, options);
-                        if (response == null) {
-                            throw new IllegalArgumentException("Provider not found: " + providerId);
-                        }
-                        exchange.getMessage().setBody(response);
-                    })
-                    .log(LoggingLevel.INFO, log.getName(), "Handled getFolderInfo for ${header.provider} parent=${header.folderId}")
-                    .endRest();
+                    .param().name("folderId").type(RestParamType.query).description("Parent folder id (optional for root)").endParam()
+                    .to("direct:getFolderInfo");
+
+        from("direct:listProviders")
+                .setBody(exchange -> registry.listProviderIds());
+
+        from("direct:getFolderInfo")
+                .process(exchange -> {
+                    String providerId = exchange.getMessage().getHeader("provider", String.class);
+                    String folderId = exchange.getMessage().getHeader("folderId", String.class);
+                    Map<String, String> options = extractOptions(exchange);
+                    Object response = registry.invokeGetFolderInfo(providerId, folderId, options);
+                    if (response == null) {
+                        throw new IllegalArgumentException("Provider not found: " + providerId);
+                    }
+                    exchange.getMessage().setBody(response);
+                })
+                .log(LoggingLevel.INFO, log.getName(), "Handled getFolderInfo for ${header.provider} parent=${header.folderId}");
     }
 
     private Map<String, String> extractOptions(Exchange exchange) {
