@@ -1,0 +1,21 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.example.camel</groupId>
+        <artifactId>camel-modular-io</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>io-component-gdrive</artifactId>
+    <name>IO Component - Google Drive</name>
+    <description>Stub Google Drive folder provider implementing the shared SPI</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.example.camel</groupId>
+            <artifactId>io-component-spi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>
