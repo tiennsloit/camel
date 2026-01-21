@@ -1,2 +1,4 @@
 camel-app/target
 .idea
+io-component-spi/.vscode/settings.json
+*/target/**.jar
