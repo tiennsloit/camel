@@ -52,7 +52,7 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
                     String providerId = exchange.getMessage().getHeader("provider", String.class);
                     String folderId = exchange.getMessage().getHeader("folderId", String.class);
                     Map<String, String> options = extractOptions(exchange);
-                    Object response = registry.invokeGetFolderInfo(providerId, folderId, options);
+                    Map<String, Object> response = registry.invokeGetFolderInfo(providerId, folderId, options);
                     if (response == null) {
                         throw new IllegalArgumentException("Provider not found: " + providerId);
                     }
