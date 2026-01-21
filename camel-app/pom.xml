@@ -29,6 +29,7 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-platform-http-starter</artifactId>
         </dependency>
+
     </dependencies>
 
     <build>
