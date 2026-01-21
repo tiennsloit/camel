@@ -1,0 +1,4 @@
+com/example/camel/io/spi/FolderInfoResponse.class
+com/example/camel/io/spi/FolderInfoRequest.class
+com/example/camel/io/spi/FolderInfoItem.class
+com/example/camel/io/spi/FolderInfoProvider.class
