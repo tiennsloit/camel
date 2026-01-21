@@ -1,12 +1,13 @@
 package com.example.camel.app;
 
-import com.example.camel.io.spi.FolderInfoProvider;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -21,8 +22,10 @@ import java.util.stream.Stream;
 @Component
 public class FolderProviderRegistry {
     private static final Logger log = LoggerFactory.getLogger(FolderProviderRegistry.class);
+    private static final String PROVIDER_CLASS = "com.example.camel.io.spi.FolderInfoProvider";
+    private static final String REQUEST_CLASS = "com.example.camel.io.spi.FolderInfoRequest";
 
-    private final Map<String, FolderInfoProvider> providers = new ConcurrentHashMap<>();
+    private final Map<String, ProviderHandle> providers = new ConcurrentHashMap<>();
     private final PluginLoaderProperties properties;
 
     public FolderProviderRegistry(PluginLoaderProperties properties) {
@@ -36,18 +39,30 @@ public class FolderProviderRegistry {
         log.info("IO providers available: {}", providers.keySet());
     }
 
-    public FolderInfoProvider getProvider(String id) {
-        return providers.get(id);
-    }
-
     public Collection<String> listProviderIds() {
         return providers.keySet();
     }
 
+    public Object invokeGetFolderInfo(String providerId, String folderId, Map<String, String> options) throws Exception {
+        ProviderHandle handle = providers.get(providerId);
+        if (handle == null) {
+            return null;
+        }
+        Object request = handle.requestCtor().newInstance(folderId, options);
+        return handle.getFolderInfo().invoke(handle.instance(), request);
+    }
+
     private void loadFromClassPath() {
-        ServiceLoader<FolderInfoProvider> loader = ServiceLoader.load(FolderInfoProvider.class);
-        for (FolderInfoProvider provider : loader) {
-            register(provider, "classpath");
+        ClassLoader cl = this.getClass().getClassLoader();
+        Class<?> providerInterface = loadClass(PROVIDER_CLASS, cl);
+        Class<?> requestClass = loadClass(REQUEST_CLASS, cl);
+        if (providerInterface == null || requestClass == null) {
+            log.info("SPI classes not on classpath; classpath providers will be skipped");
+            return;
+        }
+        ServiceLoader<?> loader = ServiceLoader.load(providerInterface, cl);
+        for (Object provider : loader) {
+            register(provider, requestClass, "classpath");
         }
     }
 
@@ -67,9 +82,15 @@ public class FolderProviderRegistry {
                 return;
             }
             try (URLClassLoader cl = new URLClassLoader(urls, this.getClass().getClassLoader())) {
-                ServiceLoader<FolderInfoProvider> loader = ServiceLoader.load(FolderInfoProvider.class, cl);
-                for (FolderInfoProvider provider : loader) {
-                    register(provider, "pluginDir");
+                Class<?> providerInterface = loadClass(PROVIDER_CLASS, cl);
+                Class<?> requestClass = loadClass(REQUEST_CLASS, cl);
+                if (providerInterface == null || requestClass == null) {
+                    log.warn("SPI classes not found in plugin classloader; cannot load providers");
+                    return;
+                }
+                ServiceLoader<?> loader = ServiceLoader.load(providerInterface, cl);
+                for (Object provider : loader) {
+                    register(provider, requestClass, "pluginDir");
                 }
             }
         } catch (IOException e) {
@@ -85,16 +106,34 @@ public class FolderProviderRegistry {
         }
     }
 
-    private void register(FolderInfoProvider provider, String source) {
-        String id = provider.id();
-        if (id == null || id.isBlank()) {
-            log.warn("Ignoring provider with empty id from {}", source);
-            return;
+    private Class<?> loadClass(String name, ClassLoader cl) {
+        try {
+            return Class.forName(name, true, cl);
+        } catch (ClassNotFoundException e) {
+            return null;
         }
-        providers.merge(id, provider, (existing, incoming) -> {
-            log.warn("Provider id {} already registered from {}, keeping existing instance", id, source);
-            return existing;
-        });
-        log.info("Registered provider '{}' from {}", id, source);
+    }
+
+    private void register(Object provider, Class<?> requestClass, String source) {
+        try {
+            Method idMethod = provider.getClass().getMethod("id");
+            Method getFolderInfo = provider.getClass().getMethod("getFolderInfo", requestClass);
+            Constructor<?> ctor = requestClass.getConstructor(String.class, Map.class);
+            String id = (String) idMethod.invoke(provider);
+            if (id == null || id.isBlank()) {
+                log.warn("Ignoring provider with empty id from {}", source);
+                return;
+            }
+            providers.merge(id, new ProviderHandle(provider, idMethod, getFolderInfo, ctor), (existing, incoming) -> {
+                log.warn("Provider id {} already registered from {}, keeping existing instance", id, source);
+                return existing;
+            });
+            log.info("Registered provider '{}' from {}", id, source);
+        } catch (Exception e) {
+            log.warn("Failed to register provider from {}: {}", source, e.getMessage());
+        }
+    }
+
+    private record ProviderHandle(Object instance, Method idMethod, Method getFolderInfo, Constructor<?> requestCtor) {
     }
 }

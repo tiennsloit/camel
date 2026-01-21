@@ -1,8 +1,5 @@
 package com.example.camel.app;
 
-import com.example.camel.io.spi.FolderInfoProvider;
-import com.example.camel.io.spi.FolderInfoRequest;
-import com.example.camel.io.spi.FolderInfoResponse;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -51,11 +48,10 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
                         String providerId = exchange.getMessage().getHeader("provider", String.class);
                         String folderId = exchange.getMessage().getHeader("folderId", String.class);
                         Map<String, String> options = extractOptions(exchange);
-                        FolderInfoProvider provider = registry.getProvider(providerId);
-                        if (provider == null) {
+                        Object response = registry.invokeGetFolderInfo(providerId, folderId, options);
+                        if (response == null) {
                             throw new IllegalArgumentException("Provider not found: " + providerId);
                         }
-                        FolderInfoResponse response = provider.getFolderInfo(new FolderInfoRequest(folderId, options));
                         exchange.getMessage().setBody(response);
                     })
                     .log(LoggingLevel.INFO, log.getName(), "Handled getFolderInfo for ${header.provider} parent=${header.folderId}")
