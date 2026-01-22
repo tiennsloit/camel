@@ -9,4 +9,4 @@ management:
 
 app:
   plugin:
-    plugins-dir: ./plugins
+    plugins-dir: /Users/joseph/Projects/camel/local-plugins
