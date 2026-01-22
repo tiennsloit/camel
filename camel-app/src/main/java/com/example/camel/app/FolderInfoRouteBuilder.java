@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Component
 public class FolderInfoRouteBuilder extends RouteBuilder {
-    private static final Logger log = LoggerFactory.getLogger(FolderInfoRouteBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FolderInfoRouteBuilder.class);
     private final FolderProviderRegistry registry;
 
     public FolderInfoRouteBuilder(FolderProviderRegistry registry) {
@@ -44,6 +44,14 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
                     .param().name("folderId").type(RestParamType.query).description("Parent folder id (optional for root)").endParam()
                     .to("direct:getFolderInfo")
 
+                .get("/{provider}/actions")
+                    .description("List dynamic actions for a provider")
+                    .to("direct:listActions")
+
+                .post("/{provider}/{action}")
+                    .description("Execute a dynamic action for the provider")
+                    .to("direct:executeAction")
+
                 .post("/refresh")
                     .description("Reload IO provider plugins from the plugins directory")
                     .to("direct:reloadPlugins");
@@ -62,7 +70,28 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
                     }
                     exchange.getMessage().setBody(response);
                 })
-                .log(LoggingLevel.INFO, log.getName(), "Handled getFolderInfo for ${header.provider} parent=${header.folderId}");
+                .log(LoggingLevel.INFO, LOGGER.getName(), "Handled getFolderInfo for ${header.provider} parent=${header.folderId}");
+
+        from("direct:listActions")
+                .setBody(exchange -> {
+                    String providerId = exchange.getMessage().getHeader("provider", String.class);
+                    return registry.listActions(providerId);
+                });
+
+        from("direct:executeAction")
+                .process(exchange -> {
+                    String providerId = exchange.getMessage().getHeader("provider", String.class);
+                    String action = exchange.getMessage().getHeader("action", String.class);
+                    Map<String, Object> params = extractBodyAsMap(exchange);
+                    Map<String, String> queryParams = extractOptions(exchange);
+                    params.putAll(new HashMap<>(queryParams));
+                    Object result = registry.invokeAction(providerId, action, params);
+                    if (result == null) {
+                        throw new IllegalArgumentException("Action not found: " + providerId + "/" + action);
+                    }
+                    exchange.getMessage().setBody(result);
+                })
+                .log(LoggingLevel.INFO, LOGGER.getName(), "Handled action ${header.provider}/${header.action}");
 
         from("direct:reloadPlugins")
                 .process(exchange -> registry.reloadPlugins())
@@ -78,5 +107,18 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
             }
         });
         return options;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractBodyAsMap(Exchange exchange) {
+        Object body = exchange.getMessage().getBody();
+        if (body instanceof Map<?, ?> m) {
+            return new HashMap<>((Map<String, Object>) m);
+        }
+        Map<?, ?> converted = exchange.getContext().getTypeConverter().convertTo(Map.class, exchange, body);
+        if (converted != null) {
+            return new HashMap<>((Map<String, Object>) converted);
+        }
+        return new HashMap<>();
     }
 }

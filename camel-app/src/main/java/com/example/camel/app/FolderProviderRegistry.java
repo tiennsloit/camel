@@ -28,8 +28,12 @@ public class FolderProviderRegistry {
     private static final Logger log = LoggerFactory.getLogger(FolderProviderRegistry.class);
     private static final String PROVIDER_CLASS = "com.example.camel.io.spi.FolderInfoProvider";
     private static final String REQUEST_CLASS = "com.example.camel.io.spi.FolderInfoRequest";
+    private static final String ACTION_EXECUTOR_CLASS = "com.example.camel.io.spi.ActionExecutor";
+    private static final String EXECUTE_INPUT_CLASS = "com.example.camel.io.spi.ExecuteInput";
 
     private final Map<String, ProviderHandle> providers = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, ActionHandle>> actions = new ConcurrentHashMap<>();
+    private final Map<String, List<ActionDescriptor>> actionDescriptors = new ConcurrentHashMap<>();
     private final List<URLClassLoader> pluginClassLoaders = new ArrayList<>();
     private final PluginLoaderProperties properties;
 
@@ -42,15 +46,19 @@ public class FolderProviderRegistry {
         loadFromClassPath();
         loadFromPluginDirectory();
         log.info("IO providers available: {}", providers.keySet());
+        log.info("Actions available: {}", summarizeActions());
     }
 
     public synchronized void reloadPlugins() {
         closePluginClassLoaders();
         providers.clear();
+        actions.clear();
+        actionDescriptors.clear();
         pluginClassLoaders.clear();
         loadFromClassPath();
         loadFromPluginDirectory();
         log.info("Reloaded IO providers: {}", providers.keySet());
+        log.info("Reloaded actions: {}", summarizeActions());
     }
 
     public Collection<String> listProviderIds() {
@@ -67,17 +75,50 @@ public class FolderProviderRegistry {
         return toResponseMap(response);
     }
 
+    public List<ActionDescriptorView> listActions(String providerId) {
+        List<ActionDescriptor> list = actionDescriptors.getOrDefault(providerId, List.of());
+        List<ActionDescriptorView> views = new ArrayList<>();
+        for (ActionDescriptor d : list) {
+            views.add(new ActionDescriptorView(normalizeActionName(d.name()), d.name(), d.parameters()));
+        }
+        return views;
+    }
+
+    public Object invokeAction(String providerId, String actionPathName, Map<String, Object> params) throws Exception {
+        String actualName = resolveActualActionName(providerId, actionPathName);
+        Map<String, ActionHandle> byProvider = actions.get(providerId);
+        if (byProvider == null) {
+            return null;
+        }
+        ActionHandle handle = byProvider.get(actualName);
+        if (handle == null) {
+            return null;
+        }
+        Object input = handle.executeInputCtor().newInstance(providerId, actualName, params);
+        return handle.execute().invoke(handle.executor(), input);
+    }
+
     private void loadFromClassPath() {
         ClassLoader cl = this.getClass().getClassLoader();
         Class<?> providerInterface = loadClass(PROVIDER_CLASS, cl);
         Class<?> requestClass = loadClass(REQUEST_CLASS, cl);
+        Class<?> actionExecutorClass = loadClass(ACTION_EXECUTOR_CLASS, cl);
+        Class<?> executeInputClass = loadClass(EXECUTE_INPUT_CLASS, cl);
         if (providerInterface == null || requestClass == null) {
             log.info("SPI classes not on classpath; classpath providers will be skipped");
-            return;
+        } else {
+            ServiceLoader<?> loader = ServiceLoader.load(providerInterface, cl);
+            for (Object provider : loader) {
+                register(provider, requestClass, "classpath");
+            }
         }
-        ServiceLoader<?> loader = ServiceLoader.load(providerInterface, cl);
-        for (Object provider : loader) {
-            register(provider, requestClass, "classpath");
+        if (actionExecutorClass == null || executeInputClass == null) {
+            log.info("Action SPI classes not on classpath; classpath actions will be skipped");
+        } else {
+            ServiceLoader<?> actionLoader = ServiceLoader.load(actionExecutorClass, cl);
+            for (Object exec : actionLoader) {
+                registerAction(exec, executeInputClass, "classpath");
+            }
         }
     }
 
@@ -101,14 +142,25 @@ public class FolderProviderRegistry {
 
             Class<?> providerInterface = loadClass(PROVIDER_CLASS, cl);
             Class<?> requestClass = loadClass(REQUEST_CLASS, cl);
+            Class<?> actionExecutorClass = loadClass(ACTION_EXECUTOR_CLASS, cl);
+            Class<?> executeInputClass = loadClass(EXECUTE_INPUT_CLASS, cl);
             if (providerInterface == null || requestClass == null) {
                 log.warn("SPI classes not found in plugin classloader; cannot load providers");
-                return;
+            } else {
+                ServiceLoader<?> loader = ServiceLoader.load(providerInterface, cl);
+                for (Object provider : loader) {
+                    register(provider, requestClass, "pluginDir");
+                }
             }
-            ServiceLoader<?> loader = ServiceLoader.load(providerInterface, cl);
-            for (Object provider : loader) {
-                register(provider, requestClass, "pluginDir");
+            if (actionExecutorClass == null || executeInputClass == null) {
+                log.info("Action SPI classes not found in plugin classloader; skipping actions");
+            } else {
+                ServiceLoader<?> actionLoader = ServiceLoader.load(actionExecutorClass, cl);
+                for (Object exec : actionLoader) {
+                    registerAction(exec, executeInputClass, "pluginDir");
+                }
             }
+            loadActionDescriptorsFromJson(pluginDir);
         } catch (IOException e) {
             log.warn("Unable to scan plugin directory {}: {}", pluginDir, e.getMessage());
         }
@@ -147,6 +199,27 @@ public class FolderProviderRegistry {
             log.info("Registered provider '{}' from {}", id, source);
         } catch (Exception e) {
             log.warn("Failed to register provider from {}: {}", source, e.getMessage());
+        }
+    }
+
+    private void registerAction(Object executor, Class<?> executeInputClass, String source) {
+        try {
+            Method providerId = executor.getClass().getMethod("providerId");
+            Method actionName = executor.getClass().getMethod("actionName");
+            Method execute = executor.getClass().getMethod("execute", executeInputClass);
+
+            String pid = (String) providerId.invoke(executor);
+            String actName = (String) actionName.invoke(executor);
+            if (pid == null || pid.isBlank() || actName == null || actName.isBlank()) {
+                log.warn("Ignoring action with empty provider/action from {}", source);
+                return;
+            }
+            Constructor<?> ctor = executeInputClass.getConstructor(String.class, String.class, Map.class);
+            actions.computeIfAbsent(pid, k -> new ConcurrentHashMap<>())
+                    .put(actName, new ActionHandle(executor, execute, ctor));
+            log.info("Registered action '{}' for provider '{}' from {}", actName, pid, source);
+        } catch (Exception e) {
+            log.warn("Failed to register action from {}: {}", source, e.getMessage());
         }
     }
 
@@ -201,4 +274,63 @@ public class FolderProviderRegistry {
             }
         }
     }
+
+    private void loadActionDescriptorsFromJson(Path pluginDir) {
+        try (Stream<Path> stream = Files.list(pluginDir)) {
+            stream.filter(p -> p.toString().endsWith(".json")).forEach(this::readActionDescriptorFile);
+        } catch (IOException e) {
+            log.warn("Unable to scan action descriptor JSON in {}: {}", pluginDir, e.getMessage());
+        }
+    }
+
+    private void readActionDescriptorFile(Path path) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            ActionDescriptorFile file = mapper.readValue(path.toFile(), ActionDescriptorFile.class);
+            if (file.provider == null || file.provider.isBlank()) {
+                log.warn("Skipping action descriptor {} because provider is missing", path.getFileName());
+                return;
+            }
+            List<ActionDescriptor> list = file.actions == null ? List.of() : file.actions;
+            actionDescriptors.put(file.provider, list);
+            log.info("Loaded {} action descriptors for provider {} from {}", list.size(), file.provider, path.getFileName());
+        } catch (Exception e) {
+            log.warn("Failed to parse action descriptor {}: {}", path.getFileName(), e.getMessage());
+        }
+    }
+
+    private String resolveActualActionName(String providerId, String actionPathName) {
+        List<ActionDescriptor> list = actionDescriptors.get(providerId);
+        if (list != null) {
+            for (ActionDescriptor d : list) {
+                if (normalizeActionName(d.name()).equals(actionPathName)) {
+                    return d.name();
+                }
+            }
+        }
+        return actionPathName;
+    }
+
+    private String normalizeActionName(String name) {
+        if (name != null && name.startsWith("_") && name.length() > 1) {
+            return name.substring(1);
+        }
+        return name;
+    }
+
+    private Map<String, List<String>> summarizeActions() {
+        Map<String, List<String>> summary = new HashMap<>();
+        actions.forEach((pid, map) -> summary.put(pid, new ArrayList<>(map.keySet())));
+        return summary;
+    }
+
+    private record ActionDescriptorFile(String provider, List<ActionDescriptor> actions) {}
+
+    private record ActionDescriptor(String name, List<ActionParameter> parameters) {}
+
+    public record ActionParameter(String name, String type) {}
+
+    public record ActionDescriptorView(String exposedName, String actualName, List<ActionParameter> parameters) {}
+
+    private record ActionHandle(Object executor, Method execute, Constructor<?> executeInputCtor) {}
 }
