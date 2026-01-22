@@ -1,0 +1,11 @@
+{
+  "provider": "onedrive",
+  "actions": [
+    {
+      "name": "_postFile",
+      "parameters": [
+        { "name": "fileName", "type": "java.lang.String" }
+      ]
+    }
+  ]
+}

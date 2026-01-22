@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -160,6 +162,7 @@ public class FolderProviderRegistry {
                     registerAction(exec, executeInputClass, "pluginDir");
                 }
             }
+            loadActionDescriptorsFromJars(urls);
             loadActionDescriptorsFromJson(pluginDir);
         } catch (IOException e) {
             log.warn("Unable to scan plugin directory {}: {}", pluginDir, e.getMessage());
@@ -283,20 +286,49 @@ public class FolderProviderRegistry {
         }
     }
 
+    private void loadActionDescriptorsFromJars(URL[] urls) {
+        for (URL url : urls) {
+            try (JarInputStream jis = new JarInputStream(url.openStream())) {
+                JarEntry entry;
+                while ((entry = jis.getNextJarEntry()) != null) {
+                    if (entry.getName().toLowerCase().endsWith(".json")) {
+                        readActionDescriptorStream(jis, entry.getName());
+                    }
+                }
+            } catch (IOException e) {
+                log.warn("Failed to read action descriptors from jar {}: {}", url, e.getMessage());
+            }
+        }
+    }
+
     private void readActionDescriptorFile(Path path) {
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             ActionDescriptorFile file = mapper.readValue(path.toFile(), ActionDescriptorFile.class);
-            if (file.provider == null || file.provider.isBlank()) {
-                log.warn("Skipping action descriptor {} because provider is missing", path.getFileName());
-                return;
-            }
-            List<ActionDescriptor> list = file.actions == null ? List.of() : file.actions;
-            actionDescriptors.put(file.provider, list);
-            log.info("Loaded {} action descriptors for provider {} from {}", list.size(), file.provider, path.getFileName());
+            storeActionDescriptor(file, path.getFileName().toString());
         } catch (Exception e) {
             log.warn("Failed to parse action descriptor {}: {}", path.getFileName(), e.getMessage());
         }
+    }
+
+    private void readActionDescriptorStream(java.io.InputStream in, String sourceName) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            ActionDescriptorFile file = mapper.readValue(in, ActionDescriptorFile.class);
+            storeActionDescriptor(file, sourceName);
+        } catch (Exception e) {
+            log.warn("Failed to parse action descriptor {}: {}", sourceName, e.getMessage());
+        }
+    }
+
+    private void storeActionDescriptor(ActionDescriptorFile file, String sourceName) {
+        if (file == null || file.provider == null || file.provider.isBlank()) {
+            log.warn("Skipping action descriptor {} because provider is missing", sourceName);
+            return;
+        }
+        List<ActionDescriptor> list = file.actions == null ? List.of() : file.actions;
+        actionDescriptors.put(file.provider, list);
+        log.info("Loaded {} action descriptors for provider {} from {}", list.size(), file.provider, sourceName);
     }
 
     private String resolveActualActionName(String providerId, String actionPathName) {
