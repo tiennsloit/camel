@@ -3,3 +3,4 @@
 io-component-spi/.vscode/settings.json
 target
 local-plugins
+io-component-*
