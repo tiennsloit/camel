@@ -2,7 +2,7 @@ package com.example.camel.io.onedrive;
 
 import com.example.camel.io.spi.AuthTokens;
 import com.example.camel.io.spi.Job;
-import com.example.camel.io.spi.LocalActionRunner;
+import static com.example.camel.io.spi.LocalActionRunner.send;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -32,7 +32,7 @@ class OneDrivePostFileActionTest {
         job.addFile("pdftest1.pdf", input);
 
         OneDrivePostFileAction action = new OneDrivePostFileAction();
-        Object result = LocalActionRunner.run(action, job, "_postFile");
+        Object result = send(action, job);
 
         assertTrue(result instanceof Map);
         Map<?, ?> resp = (Map<?, ?>) result;

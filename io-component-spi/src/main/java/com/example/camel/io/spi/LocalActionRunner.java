@@ -10,6 +10,13 @@ import java.util.Map;
 public final class LocalActionRunner {
     private LocalActionRunner() {}
 
+    /**
+     * Convenience wrapper: send job using the executor's declared actionName().
+     */
+    public static Object send(ActionExecutor executor, Job job) throws Exception {
+        return run(executor, job, executor.actionName());
+    }
+
     public static Object run(ActionExecutor executor, Job job, String actionName) throws Exception {
         String providerId = executor.providerId();
         Map<String, Object> merged = new HashMap<>();

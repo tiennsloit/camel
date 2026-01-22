@@ -29,11 +29,11 @@ public class OneDrivePostFileAction implements ActionExecutor {
         // Stubbed response; replace with actual upload result URL.
         String url = "https://onedrive.example.com/files/" + fileName;
         Map<String, Object> resp = new HashMap<>();
-//        resp.put("providerId", providerId());
-//        resp.put("action", "postFile");
-//        resp.put("fileName", fileName);
-//        resp.put("url", url);
-        resp.put("url", "abc");
+        resp.put("providerId", providerId());
+        resp.put("action", "postFile");
+        resp.put("fileName", fileName);
+        resp.put("url", url);
+
         return resp;
     }
 }
