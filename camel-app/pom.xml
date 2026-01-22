@@ -5,7 +5,7 @@
 
     <groupId>com.example.camel</groupId>
     <artifactId>camel-app</artifactId>
-    <version>0.1.7</version>
+    <version>0.1.10</version>
     <packaging>jar</packaging>
 
     <name>Camel Runtime App</name>
