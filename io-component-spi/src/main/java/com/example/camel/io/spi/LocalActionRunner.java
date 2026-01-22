@@ -22,6 +22,11 @@ public final class LocalActionRunner {
         Map<String, Object> merged = new HashMap<>();
         merged.putAll(job.parameters());
         merged.putAll(job.headers());
+        // Flatten attached params from AuthTokens, if present
+        Object authHeader = job.headers().get(AuthTokens.getHeaderName());
+        if (authHeader instanceof AuthTokens authTokens) {
+            authTokens.tokens().values().forEach(entry -> merged.putAll(entry.attachedParams()));
+        }
         merged.put("files", job.files());
         ExecuteInput input = new ExecuteInput(providerId, actionName, merged);
         return executor.execute(input);

@@ -26,8 +26,11 @@ public class OneDrivePostFileAction implements ActionExecutor {
     public Object execute(ExecuteInput input) {
         Map<String, Object> params = new HashMap<>(input.parameters());
         String fileName = params.getOrDefault("fileName", "unknown").toString();
-        // Stubbed response; replace with actual upload result URL.
-        String url = "https://onedrive.example.com/files/" + fileName;
+        String baseUrl = params.getOrDefault("url", "not valid url").toString();
+        if (!baseUrl.endsWith("/")) {
+            baseUrl = baseUrl + "/";
+        }
+        String url = baseUrl + fileName;
         Map<String, Object> resp = new HashMap<>();
         resp.put("providerId", providerId());
         resp.put("action", "postFile");
