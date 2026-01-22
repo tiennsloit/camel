@@ -2,7 +2,6 @@ package com.example.camel.io.onedrive;
 
 import com.example.camel.io.spi.ActionExecutor;
 import com.example.camel.io.spi.ExecuteInput;
-import com.example.camel.io.spi.ParamUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,9 +24,9 @@ public class OneDrivePostFileAction implements ActionExecutor {
 
     @Override
     public Object execute(ExecuteInput input) {
-        Map<String, Object> params = ParamUtils.mergedWithAttachedParams(input.parameters());
+        Map<String, Object> params = mergedWithAttachedParams(input.parameters());
         String fileName = params.getOrDefault("fileName", "unknown").toString();
-        String baseUrl = ParamUtils.resolveStringParam(params, "url", "not valid url");
+        String baseUrl = resolveStringParam(params, "url", "not valid url");
         if (!baseUrl.endsWith("/")) {
             baseUrl = baseUrl + "/";
         }
