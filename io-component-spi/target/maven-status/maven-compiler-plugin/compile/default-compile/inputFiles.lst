@@ -1,4 +1,9 @@
+/Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/ActionExecutor.java
+/Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/AuthTokens.java
+/Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/ExecuteInput.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/FolderInfoItem.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/FolderInfoProvider.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/FolderInfoRequest.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/FolderInfoResponse.java
+/Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/Job.java
+/Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/LocalActionRunner.java
