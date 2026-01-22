@@ -1,5 +1,6 @@
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/ActionExecutor.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/AuthTokens.java
+/Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/BaseActionTest.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/ExecuteInput.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/FolderInfoItem.java
 /Users/joseph/Projects/camel/io-component-spi/src/main/java/com/example/camel/io/spi/FolderInfoProvider.java

@@ -2,7 +2,6 @@ package com.example.camel.io.onedrive;
 
 import com.example.camel.io.spi.AuthTokens;
 import com.example.camel.io.spi.Job;
-import static com.example.camel.io.spi.LocalActionRunner.send;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -12,7 +11,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class OneDrivePostFileActionTest {
+class OneDrivePostFileActionTest extends com.example.camel.io.spi.BaseActionTest<OneDrivePostFileAction> {
+
+    OneDrivePostFileActionTest() {
+        super("onedrive", "_postFile");
+    }
 
     @Test
     void postFile_returnsUrl() throws Exception {
@@ -31,8 +34,7 @@ class OneDrivePostFileActionTest {
         File input = new File("src/test/resources/1.pdf");
         job.addFile("pdftest1.pdf", input);
 
-        OneDrivePostFileAction action = new OneDrivePostFileAction();
-        Object result = send(action, job);
+        Object result = send(job);
 
         assertTrue(result instanceof Map);
         Map<?, ?> resp = (Map<?, ?>) result;

@@ -1,4 +1,5 @@
 com/example/camel/io/spi/AuthTokens.class
+com/example/camel/io/spi/BaseActionTest.class
 com/example/camel/io/spi/AuthTokens$TokenEntry.class
 com/example/camel/io/spi/LocalActionRunner.class
 com/example/camel/io/spi/ExecuteInput.class
