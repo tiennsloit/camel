@@ -96,7 +96,12 @@ public class FolderProviderRegistry {
         if (handle == null) {
             return null;
         }
-        Object input = handle.executeInputCtor().newInstance(providerId, actualName, params);
+        Object input;
+        if (handle.executeInputCtor().getParameterCount() == 4) {
+            input = handle.executeInputCtor().newInstance(providerId, actualName, params, Map.of());
+        } else {
+            input = handle.executeInputCtor().newInstance(providerId, actualName, params);
+        }
         return handle.execute().invoke(handle.executor(), input);
     }
 
@@ -217,7 +222,7 @@ public class FolderProviderRegistry {
                 log.warn("Ignoring action with empty provider/action from {}", source);
                 return;
             }
-            Constructor<?> ctor = executeInputClass.getConstructor(String.class, String.class, Map.class);
+            Constructor<?> ctor = findExecuteInputCtor(executeInputClass);
             actions.computeIfAbsent(pid, k -> new ConcurrentHashMap<>())
                     .put(actName, new ActionHandle(executor, execute, ctor));
             log.info("Registered action '{}' for provider '{}' from {}", actName, pid, source);
@@ -363,6 +368,14 @@ public class FolderProviderRegistry {
     public record ActionParameter(String name, String type) {}
 
     public record ActionDescriptorView(String exposedName, String actualName, List<ActionParameter> parameters) {}
+
+    private Constructor<?> findExecuteInputCtor(Class<?> executeInputClass) throws NoSuchMethodException {
+        try {
+            return executeInputClass.getConstructor(String.class, String.class, Map.class, Map.class);
+        } catch (NoSuchMethodException e) {
+            return executeInputClass.getConstructor(String.class, String.class, Map.class);
+        }
+    }
 
     private record ActionHandle(Object executor, Method execute, Constructor<?> executeInputCtor) {}
 }

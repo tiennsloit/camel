@@ -1,6 +1,7 @@
 package com.example.camel.io.spi;
 
 import java.util.Map;
+import com.example.camel.io.spi.ParamUtils;
 
 /**
  * Generic action executor for dynamic plugin actions.

@@ -27,8 +27,8 @@ public final class LocalActionRunner {
         if (authHeader instanceof AuthTokens authTokens) {
             authTokens.tokens().values().forEach(entry -> merged.putAll(entry.attachedParams()));
         }
-        merged.put("files", job.files());
-        ExecuteInput input = new ExecuteInput(providerId, actionName, merged);
+        Map<String, java.io.File> files = new HashMap<>(job.files());
+        ExecuteInput input = new ExecuteInput(providerId, actionName, merged, files);
         return executor.execute(input);
     }
 }

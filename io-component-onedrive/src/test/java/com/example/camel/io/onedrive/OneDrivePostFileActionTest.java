@@ -5,6 +5,9 @@ import com.example.camel.io.spi.Job;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,15 +34,29 @@ class OneDrivePostFileActionTest extends com.example.camel.io.spi.BaseActionTest
         tokens.addTokens("egnyte", token, attachedParams);
         job.addHeader(AuthTokens.getHeaderName(), tokens);
 
-        File input = new File("src/test/resources/1.pdf");
-        job.addFile("pdftest1.pdf", input);
+        File input = loadResourceFile("1.pdf");
+        job.addFile("1.pdf", input);
 
         Object result = send(job);
 
         assertTrue(result instanceof Map);
         Map<?, ?> resp = (Map<?, ?>) result;
         assertEquals("onedrive", resp.get("providerId"));
-        assertEquals("testFile-Testcase", resp.get("fileName"));
-        assertTrue(resp.get("url").toString().contains("testFile-Testcase"));
+        assertEquals("1.pdf", resp.get("fileName"));
+        assertTrue(resp.get("url").toString().contains("1.pdf"));
+        assertTrue(((Number) resp.get("fileSize")).longValue() > 0);
+    }
+
+    @Test
+    void resourceFile_exists_and_hasSize() throws Exception {
+        File input = loadResourceFile("1.pdf");
+        assertTrue(input.exists(), "Test fixture 1.pdf not found");
+        assertTrue(input.length() > 0, "Test fixture 1.pdf is empty");
+        assertTrue(Files.size(input.toPath()) > 0, "Test fixture 1.pdf size check failed");
+    }
+
+    private File loadResourceFile(String name) throws URISyntaxException {
+        Path path = Path.of(getClass().getClassLoader().getResource(name).toURI());
+        return path.toFile();
     }
 }
