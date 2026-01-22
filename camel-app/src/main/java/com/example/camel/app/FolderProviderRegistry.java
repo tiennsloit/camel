@@ -44,6 +44,15 @@ public class FolderProviderRegistry {
         log.info("IO providers available: {}", providers.keySet());
     }
 
+    public synchronized void reloadPlugins() {
+        closePluginClassLoaders();
+        providers.clear();
+        pluginClassLoaders.clear();
+        loadFromClassPath();
+        loadFromPluginDirectory();
+        log.info("Reloaded IO providers: {}", providers.keySet());
+    }
+
     public Collection<String> listProviderIds() {
         return providers.keySet();
     }
@@ -183,7 +192,7 @@ public class FolderProviderRegistry {
     }
 
     @jakarta.annotation.PreDestroy
-    public void closePluginClassLoaders() {
+    public synchronized void closePluginClassLoaders() {
         for (URLClassLoader cl : pluginClassLoaders) {
             try {
                 cl.close();

@@ -42,7 +42,11 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
                 .get("/{provider}/getFolderInfo")
                     .description("List folders for the given provider")
                     .param().name("folderId").type(RestParamType.query).description("Parent folder id (optional for root)").endParam()
-                    .to("direct:getFolderInfo");
+                    .to("direct:getFolderInfo")
+
+                .post("/refresh")
+                    .description("Reload IO provider plugins from the plugins directory")
+                    .to("direct:reloadPlugins");
 
         from("direct:listProviders")
                 .setBody(exchange -> registry.listProviderIds());
@@ -59,6 +63,10 @@ public class FolderInfoRouteBuilder extends RouteBuilder {
                     exchange.getMessage().setBody(response);
                 })
                 .log(LoggingLevel.INFO, log.getName(), "Handled getFolderInfo for ${header.provider} parent=${header.folderId}");
+
+        from("direct:reloadPlugins")
+                .process(exchange -> registry.reloadPlugins())
+                .setBody(constant(Map.of("status", "ok", "message", "Plugins reloaded")));
     }
 
     private Map<String, String> extractOptions(Exchange exchange) {
