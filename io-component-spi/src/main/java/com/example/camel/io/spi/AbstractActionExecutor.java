@@ -19,6 +19,13 @@ public abstract class AbstractActionExecutor implements ActionExecutor {
         this.actionName = actionName;
     }
 
+    /**
+     * Returns the explicitly provided actionName (may be null).
+     */
+    protected String explicitActionName() {
+        return actionName;
+    }
+
     @Override
     public String providerId() {
         if (providerId != null) {

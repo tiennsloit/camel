@@ -27,9 +27,8 @@ public abstract class AbstractGetFolderInfoExecutor extends AbstractActionExecut
 
     @Override
     public String actionName() {
-        String explicit = super.actionName();
-        // If an explicit actionName was provided, use it.
-        if (explicit != null && !explicit.equals(getClass().getSimpleName())) {
+        String explicit = explicitActionName();
+        if (explicit != null) {
             return explicit;
         }
         return deriveActionName(getClass(), providerId());
