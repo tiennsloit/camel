@@ -17,7 +17,7 @@ public class OneDrivePostFileAction extends AbstractActionExecutor {
     }
 
     @Override
-    public Object execute(ExecuteInput input) {
+    public Object execute(ExecuteInput input) throws Exception {
         Map<String, Object> params = mergedWithAttachedParams(input.parameters());
         String fileName = params.getOrDefault("fileName", "unknown").toString();
         String baseUrl = resolveStringParam(params, "url", "not valid url");
@@ -25,38 +25,18 @@ public class OneDrivePostFileAction extends AbstractActionExecutor {
         // pick first file if provided
         java.io.File file = input.files().values().stream().findFirst().orElse(null);
         String fileNameFromFile = file != null ? file.getName() : fileName;
-        boolean graphUpload = Boolean.parseBoolean(String.valueOf(params.getOrDefault("graphUpload", "false")));
         String parentPath = params.getOrDefault("parentPath", "").toString();
 
-        if (graphUpload) {
-            if (accessToken == null) {
-                throw new IllegalStateException("Missing access_token for graphUpload");
-            }
-            if (file == null) {
-                throw new IllegalStateException("Missing file for graphUpload");
-            }
-            Map<String, Object> graphResp = OneDriveApi.uploadSmallFile(accessToken, parentPath, file);
-            graphResp.put("providerId", providerId());
-            graphResp.put("action", actionName());
-            return graphResp;
+        if (accessToken == null) {
+            throw new IllegalStateException("Missing access_token for graphUpload");
         }
-
-        if (!baseUrl.endsWith("/")) {
-            baseUrl = baseUrl + "/";
+        if (file == null) {
+            throw new IllegalStateException("Missing file for graphUpload");
         }
-        String url = baseUrl + fileNameFromFile;
-        Map<String, Object> resp = new HashMap<>();
-        resp.put("providerId", providerId());
-        resp.put("action", "postFile");
-        resp.put("fileName", fileNameFromFile);
-        resp.put("url", url);
-        if (accessToken != null) {
-            resp.put("access_token", accessToken);
-        }
-        if (file != null) {
-            resp.put("fileSize", file.length());
-        }
-
-        return resp;
+        Map<String, Object> graphResp = OneDriveApi.uploadSmallFile(accessToken, parentPath, file);
+        graphResp.put("providerId", providerId());
+        graphResp.put("action", actionName());
+        graphResp.put("access_token", accessToken);
+        return graphResp;
     }
 }
