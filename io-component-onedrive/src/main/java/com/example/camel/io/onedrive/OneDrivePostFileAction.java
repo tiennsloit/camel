@@ -1,6 +1,6 @@
 package com.example.camel.io.onedrive;
 
-import com.example.camel.io.spi.ActionExecutor;
+import com.example.camel.io.spi.AbstractActionExecutor;
 import com.example.camel.io.spi.ExecuteInput;
 
 import java.util.HashMap;
@@ -10,16 +10,9 @@ import java.util.Map;
  * Stub action executor for posting a file to OneDrive.
  * Replace with real upload logic; currently returns a dummy URL.
  */
-public class OneDrivePostFileAction implements ActionExecutor {
-    @Override
-    public String providerId() {
-        return "onedrive";
-    }
-
-    @Override
-    public String actionName() {
-        // matches the JSON descriptor "_postFile"
-        return "_postFile";
+public class OneDrivePostFileAction extends AbstractActionExecutor {
+    public OneDrivePostFileAction() {
+        super("onedrive", "_postFile");
     }
 
     @Override

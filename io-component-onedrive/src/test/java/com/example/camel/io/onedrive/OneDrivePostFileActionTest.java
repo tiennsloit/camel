@@ -2,6 +2,8 @@ package com.example.camel.io.onedrive;
 
 import com.example.camel.io.spi.AuthTokens;
 import com.example.camel.io.spi.Job;
+import com.example.camel.io.spi.BaseActionTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -14,10 +16,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class OneDrivePostFileActionTest extends com.example.camel.io.spi.BaseActionTest<OneDrivePostFileAction> {
+class OneDrivePostFileActionTest extends BaseActionTest {
 
-    OneDrivePostFileActionTest() {
-        super("onedrive", "_postFile");
+    @BeforeEach
+    void setup() {
+        init("onedrive", "_postFile");
     }
 
     @Test

@@ -5,32 +5,46 @@ import java.util.function.Supplier;
 
 /**
  * Minimal base to simplify action unit tests:
- * - provide a supplier for the action under test
+ * - call init(providerId, actionName) to discover via ServiceLoader
+ *   or pass a Supplier in the constructor
  * - use send(job) to execute the action via LocalActionRunner
  */
-public abstract class BaseActionTest<T extends ActionExecutor> {
-    private final Supplier<T> factory;
+public abstract class BaseActionTest {
+    private Supplier<? extends ActionExecutor> factory;
 
-    protected BaseActionTest(Supplier<T> factory) {
+    protected BaseActionTest() {
+    }
+
+    protected BaseActionTest(Supplier<? extends ActionExecutor> factory) {
         this.factory = factory;
     }
 
     /**
      * Alternate constructor: discover the action via ServiceLoader by providerId and actionName.
      */
-    @SuppressWarnings("unchecked")
     protected BaseActionTest(String providerId, String actionName) {
+        init(providerId, actionName);
+    }
+
+    /**
+     * Initialize using ServiceLoader lookup. Useful for tests with @BeforeEach.
+     */
+    @SuppressWarnings("unchecked")
+    protected void init(String providerId, String actionName) {
         this.factory = () -> {
             for (ActionExecutor exec : ServiceLoader.load(ActionExecutor.class)) {
                 if (providerId.equals(exec.providerId()) && actionName.equals(exec.actionName())) {
-                    return (T) exec;
+                    return exec;
                 }
             }
             throw new IllegalStateException("No ActionExecutor found for " + providerId + "/" + actionName);
         };
     }
 
-    protected T action() {
+    protected ActionExecutor action() {
+        if (factory == null) {
+            throw new IllegalStateException("Action factory not initialized; call init(...) first.");
+        }
         return factory.get();
     }
 

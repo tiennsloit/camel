@@ -6,6 +6,12 @@
       "parameters": [
         { "name": "fileName", "type": "java.lang.String" }
       ]
+    },
+    {
+      "name": "getFolderInfo",
+      "parameters": [
+        { "name": "folderId", "type": "java.lang.String" }
+      ]
     }
   ]
 }

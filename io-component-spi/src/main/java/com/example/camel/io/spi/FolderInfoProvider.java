@@ -9,11 +9,22 @@ public interface FolderInfoProvider {
     /**
         * Unique provider identifier, e.g. "onedrive", "gdrive", "dropbox".
         */
-    String id();
+    default String id() {
+        return deriveProviderId(getClass());
+    }
 
     /**
      * Return folder metadata for the requested folder.
      * Passing a null or empty folderId should return root/top-level folders.
      */
     FolderInfoResponse getFolderInfo(FolderInfoRequest request) throws Exception;
+
+    private static String deriveProviderId(Class<?> clazz) {
+        String pkg = clazz.getPackageName();
+        int lastDot = pkg.lastIndexOf('.');
+        if (lastDot >= 0 && lastDot + 1 < pkg.length()) {
+            return pkg.substring(lastDot + 1);
+        }
+        return pkg;
+    }
 }

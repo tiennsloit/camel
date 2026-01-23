@@ -1,1 +1,2 @@
 com.example.camel.io.onedrive.OneDrivePostFileAction
+com.example.camel.io.onedrive.OneDriveGetFolderInfoAction
