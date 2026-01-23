@@ -32,7 +32,7 @@ public abstract class AbstractActionExecutor implements ActionExecutor {
         if (actionName != null) {
             return actionName;
         }
-        return getClass().getSimpleName();
+        return deriveUnderscoredActionName();
     }
 
     private static String deriveProviderId(Class<?> clazz) {

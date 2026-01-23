@@ -16,11 +16,6 @@ public class OneDrivePostFileAction extends AbstractActionExecutor {
     }
 
     @Override
-    public String actionName() {
-        return deriveUnderscoredActionName();
-    }
-
-    @Override
     public Object execute(ExecuteInput input) {
         Map<String, Object> params = mergedWithAttachedParams(input.parameters());
         String fileName = params.getOrDefault("fileName", "unknown").toString();
