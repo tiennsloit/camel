@@ -1,29 +1,23 @@
 package com.example.camel.io.onedrive;
 
-import com.example.camel.io.spi.AbstractActionExecutor;
-import com.example.camel.io.spi.ExecuteInput;
+import com.example.camel.io.spi.AbstractGetFolderInfoExecutor;
 import com.example.camel.io.spi.FolderInfoItem;
+import com.example.camel.io.spi.FolderInfoRequest;
 import com.example.camel.io.spi.FolderInfoResponse;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * ActionExecutor that produces folder info for OneDrive.
  */
-public class OneDriveGetFolderInfoAction extends AbstractActionExecutor {
+public class OneDriveGetFolderInfoAction extends AbstractGetFolderInfoExecutor {
     public OneDriveGetFolderInfoAction() {
         super("onedrive", "getFolderInfo");
     }
 
     @Override
-    public Object execute(ExecuteInput input) {
-        Map<String, Object> params = mergedWithAttachedParams(input.parameters());
-        String parentId = params.containsKey("folderId") ? String.valueOf(params.get("folderId")) : null;
-        return buildResponse(parentId);
-    }
-
-    static FolderInfoResponse buildResponse(String parentId) {
+    public FolderInfoResponse getFolderInfo(FolderInfoRequest request) {
+        String parentId = request.folderId();
         List<FolderInfoItem> items = parentId == null
                 ? List.of(
                         new FolderInfoItem("o-root-1", "OneDrive", "/OneDrive", true),
@@ -31,6 +25,6 @@ public class OneDriveGetFolderInfoAction extends AbstractActionExecutor {
                 : List.of(
                         new FolderInfoItem(parentId + "-child-a", "Projects", "/Projects", true),
                         new FolderInfoItem(parentId + "-child-b", "Archive", "/Archive", false));
-        return new FolderInfoResponse("onedrive", parentId, items);
+        return new FolderInfoResponse(providerId(), parentId, items);
     }
 }

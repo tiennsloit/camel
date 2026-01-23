@@ -3,21 +3,21 @@ package com.example.camel.io.spi;
 import java.util.Map;
 
 /**
- * Base ActionExecutor for folder listing actions. It wraps a FolderInfoProvider
- * and exposes it through the dynamic action mechanism.
+ * Base ActionExecutor for folder listing actions. Subclasses implement
+ * {@link #getFolderInfo(FolderInfoRequest)}; this base wires it to the
+ * dynamic action execution contract.
  */
 public abstract class AbstractGetFolderInfoExecutor extends AbstractActionExecutor {
-    private final FolderInfoProvider provider;
-
-    protected AbstractGetFolderInfoExecutor(String providerId, String actionName, FolderInfoProvider provider) {
+    protected AbstractGetFolderInfoExecutor(String providerId, String actionName) {
         super(providerId, actionName);
-        this.provider = provider;
     }
 
     @Override
     public Object execute(ExecuteInput input) throws Exception {
         Map<String, Object> params = mergedWithAttachedParams(input.parameters());
         String folderId = params.containsKey("folderId") ? String.valueOf(params.get("folderId")) : null;
-        return provider.getFolderInfo(new FolderInfoRequest(folderId, null));
+        return getFolderInfo(new FolderInfoRequest(folderId, null));
     }
+
+    public abstract FolderInfoResponse getFolderInfo(FolderInfoRequest request) throws Exception;
 }
