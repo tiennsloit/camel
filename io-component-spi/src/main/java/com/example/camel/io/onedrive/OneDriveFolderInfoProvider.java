@@ -1,18 +1,19 @@
 package com.example.camel.io.onedrive;
 
-import com.example.camel.io.spi.AbstractGetFolderInfoExecutor;
-import com.example.camel.io.spi.FolderInfoItem;
+import com.example.camel.io.spi.FolderInfoProvider;
 import com.example.camel.io.spi.FolderInfoRequest;
 import com.example.camel.io.spi.FolderInfoResponse;
+import com.example.camel.io.spi.FolderInfoItem;
 
 import java.util.List;
 
 /**
- * ActionExecutor that produces folder info for OneDrive.
+ * Placeholder OneDrive implementation. Replace stubbed data with real Graph API calls.
  */
-public class OneDriveGetFolderInfoAction extends AbstractGetFolderInfoExecutor {
-    public OneDriveGetFolderInfoAction() {
-        super();
+public class OneDriveFolderInfoProvider implements FolderInfoProvider {
+    @Override
+    public String id() {
+        return "onedrive";
     }
 
     @Override
@@ -25,6 +26,6 @@ public class OneDriveGetFolderInfoAction extends AbstractGetFolderInfoExecutor {
                 : List.of(
                         new FolderInfoItem(parentId + "-child-a", "Projects", "/Projects", true),
                         new FolderInfoItem(parentId + "-child-b", "Archive", "/Archive", false));
-        return new FolderInfoResponse(providerId(), parentId, items);
+        return new FolderInfoResponse("onedrive", parentId, items);
     }
 }

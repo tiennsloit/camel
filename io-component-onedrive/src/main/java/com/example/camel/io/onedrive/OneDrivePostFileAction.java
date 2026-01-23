@@ -12,7 +12,12 @@ import java.util.Map;
  */
 public class OneDrivePostFileAction extends AbstractActionExecutor {
     public OneDrivePostFileAction() {
-        super("onedrive", "_postFile");
+        super();
+    }
+
+    @Override
+    public String actionName() {
+        return deriveUnderscoredActionName();
     }
 
     @Override

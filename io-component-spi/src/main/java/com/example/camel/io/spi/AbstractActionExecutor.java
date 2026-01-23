@@ -40,4 +40,29 @@ public abstract class AbstractActionExecutor implements ActionExecutor {
         int lastDot = pkg.lastIndexOf('.');
         return lastDot >= 0 ? pkg.substring(lastDot + 1) : pkg;
     }
+
+    /**
+     * Helper to derive an action name from the class name:
+     * - strips "Action" suffix
+     * - strips providerId prefix (case-insensitive)
+     * - lower-cases first character
+     * - ensures a leading "_"
+     */
+    protected String deriveUnderscoredActionName() {
+        String provider = providerId();
+        String simple = getClass().getSimpleName();
+        if (simple.endsWith("Action") && simple.length() > "Action".length()) {
+            simple = simple.substring(0, simple.length() - "Action".length());
+        }
+        if (provider != null && simple.toLowerCase().startsWith(provider.toLowerCase())) {
+            simple = simple.substring(provider.length());
+        }
+        if (!simple.isEmpty()) {
+            simple = Character.toLowerCase(simple.charAt(0)) + simple.substring(1);
+        }
+        if (!simple.startsWith("_")) {
+            simple = "_" + simple;
+        }
+        return simple;
+    }
 }

@@ -8,6 +8,10 @@ import java.util.Map;
  * dynamic action execution contract.
  */
 public abstract class AbstractGetFolderInfoExecutor extends AbstractActionExecutor {
+    protected AbstractGetFolderInfoExecutor() {
+        super(null, null);
+    }
+
     protected AbstractGetFolderInfoExecutor(String providerId, String actionName) {
         super(providerId, actionName);
     }
@@ -20,4 +24,32 @@ public abstract class AbstractGetFolderInfoExecutor extends AbstractActionExecut
     }
 
     public abstract FolderInfoResponse getFolderInfo(FolderInfoRequest request) throws Exception;
+
+    @Override
+    public String actionName() {
+        String explicit = super.actionName();
+        // If an explicit actionName was provided, use it.
+        if (explicit != null && !explicit.equals(getClass().getSimpleName())) {
+            return explicit;
+        }
+        return deriveActionName(getClass(), providerId());
+    }
+
+    private static String deriveActionName(Class<?> clazz, String providerId) {
+        String simple = clazz.getSimpleName();
+        if (simple.endsWith("Action") && simple.length() > "Action".length()) {
+            simple = simple.substring(0, simple.length() - "Action".length());
+        }
+        if (providerId != null && simple.toLowerCase().startsWith(providerId.toLowerCase())) {
+            simple = simple.substring(providerId.length());
+        }
+        if (simple.isEmpty()) {
+            simple = clazz.getSimpleName();
+        }
+        // lowerCamelCase first character
+        if (!simple.isEmpty()) {
+            simple = Character.toLowerCase(simple.charAt(0)) + simple.substring(1);
+        }
+        return simple;
+    }
 }
