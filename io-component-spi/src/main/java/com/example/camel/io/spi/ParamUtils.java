@@ -19,6 +19,8 @@ public final class ParamUtils {
         Object auth = params.get(AuthTokens.getHeaderName());
         if (auth instanceof AuthTokens tokens) {
             tokens.tokens().values().forEach(entry -> {
+                // expose tokens (e.g., access_token) if not already present
+                entry.tokens().forEach(merged::putIfAbsent);
                 entry.attachedParams().forEach(merged::putIfAbsent);
             });
         }

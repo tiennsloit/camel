@@ -34,7 +34,7 @@ class OneDrivePostFileActionTest extends BaseActionTest {
         Map<String, Object> attachedParams = new HashMap<>();
         attachedParams.put("url", "https://onedrive.example.com/files/");
         AuthTokens tokens = new AuthTokens();
-        tokens.addTokens("egnyte", token, attachedParams);
+        tokens.addTokens("onedrive", token, attachedParams);
         job.addHeader(AuthTokens.getHeaderName(), tokens);
 
         File input = loadResourceFile("1.pdf");

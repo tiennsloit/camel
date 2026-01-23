@@ -4,3 +4,4 @@ io-component-spi/.vscode/settings.json
 target
 local-plugins
 libs
+__pycache__
